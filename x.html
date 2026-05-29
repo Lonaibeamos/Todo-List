@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo App</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Arial;
+        background: lightblue;
+      }
+
+      .sidebar {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        min-height: 100vh;
+      }
+
+      .sidebar1 {
+        background: #444;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .sidebar2 {
+        padding: 20px;
+      }
+
+      .proj {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .top {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+        cursor: pointer;
+      }
+
+      .project-item {
+        background: peachpuff;
+        padding: 15px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .project-item:hover {
+        background: orange;
+      }
+
+      .newbtn {
+        width: 150px;
+        height: 50px;
+        border: none;
+        background: rebeccapurple;
+        color: white;
+        font-size: 18px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+
+      .todo-container {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .todo-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .todo-title {
+        cursor: pointer;
+      }
+
+      .todo-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .todo-btn {
+        width: 25px;
+        height: 25px;
+        cursor: pointer;
+      }
+
+      .blur {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(5px);
+        display: none;
+      }
+
+      .form,
+      #form,
+      .details-modal {
+        position: fixed;
+
+        top: 50%;
+        left: 50%;
+
+        transform: translate(-50%, -50%);
+
+        background: white;
+
+        padding: 20px;
+
+        border-radius: 10px;
+
+        display: none;
+
+        flex-direction: column;
+
+        gap: 15px;
+
+        width: 300px;
+
+        z-index: 1000;
+      }
+
+      .form input,
+      #form input,
+      #form select {
+        padding: 10px;
+      }
+
+      .buttons {
+        display: flex;
+        justify-content: end;
+        gap: 10px;
+      }
+
+      .details-modal h2 {
+        margin-bottom: 10px;
+      }
+
+      .details-modal p {
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="blur"></div>
+
+    <div class="sidebar">
+      <div class="sidebar1">
+        <div class="proj">
+          <button class="top">+</button>
+
+          Add Projects
+        </div>
+      </div>
+
+      <div class="sidebar2">
+        <button class="newbtn">New Todo</button>
+
+        <div class="todo-container"></div>
+      </div>
+    </div>
+
+    <!-- PROJECT FORM -->
+
+    <form class="form">
+      <h2>Create Project</h2>
+
+      <input type="text" id="projectName" placeholder="Project name" />
+
+      <div class="buttons">
+        <button type="reset" class="c1">Cancel</button>
+
+        <button type="submit" class="cr1">Create</button>
+      </div>
+    </form>
+
+    <!-- TODO FORM -->
+
+    <form id="form">
+      <h2>Add Todo</h2>
+
+      <input type="text" id="todo" placeholder="Todo title" />
+
+      <input type="text" id="des" placeholder="Description" />
+
+      <input type="date" id="date" />
+
+      <select id="priority">
+        <option value="High">High</option>
+
+        <option value="Medium">Medium</option>
+
+        <option value="Low">Low</option>
+      </select>
+
+      <div class="buttons">
+        <button type="reset" class="c2">Cancel</button>
+
+        <button type="submit" class="cr2">Add Todo</button>
+      </div>
+    </form>
+
+    <!-- DETAILS MODAL -->
+
+    <div class="details-modal">
+      <h2 class="details-title"></h2>
+
+      <p class="details-description"></p>
+
+      <p class="details-date"></p>
+
+      <p class="details-priority"></p>
+    </div>
+
+    <script>
+      let activeProjectName = "Workout";
+
+      let editingTodo = null;
+
+      class Todos {
+        constructor(title, description, dueDate, priorities) {
+          this.title = title;
+          this.description = description;
+          this.dueDate = dueDate;
+          this.priorities = priorities;
+          this.complete = false;
+        }
+
+        toggleComplete() {
+          this.complete = !this.complete;
+        }
+
+        changePriority(priorityName) {
+          this.priorities = priorityName;
+        }
+      }
+
+      let projects = [
+        {
+          name: "Workout",
+
+          todos: [
+            new Todos("Leg Day", "Squats and lunges", "2026-05-30", "High"),
+
+            new Todos("Arm Day", "Biceps and triceps", "2026-05-31", "Medium"),
+          ],
+        },
+      ];
+
+      // DOM
+
+      const sidebar1 = document.querySelector(".sidebar1");
+
+      const addProjBtn = document.querySelector(".top");
+
+      const newTodoBtn = document.querySelector(".newbtn");
+
+      const form1 = document.querySelector(".form");
+
+      const form2 = document.querySelector("#form");
+
+      const blurry = document.querySelector(".blur");
+
+      const projectNameInput = document.querySelector("#projectName");
+
+      const createProjectBtn = document.querySelector(".cr1");
+
+      const cancel1 = document.querySelector(".c1");
+
+      const cancel2 = document.querySelector(".c2");
+
+      const todoContainer = document.querySelector(".todo-container");
+
+      const addTodoBtn = document.querySelector(".cr2");
+
+      const titleInput = document.querySelector("#todo");
+
+      const descriptionInput = document.querySelector("#des");
+
+      const dateInput = document.querySelector("#date");
+
+      const priorityInput = document.querySelector("#priority");
+
+      const detailsModal = document.querySelector(".details-modal");
+
+      const detailsTitle = document.querySelector(".details-title");
+
+      const detailsDescription = document.querySelector(".details-description");
+
+      const detailsDate = document.querySelector(".details-date");
+
+      const detailsPriority = document.querySelector(".details-priority");
+
+      // SHOW PROJECTS
+
+      function showProjects() {
+        document
+          .querySelectorAll(".project-item")
+          .forEach((item) => item.remove());
+
+        projects.forEach((project) => {
+          const projectdiv = document.createElement("div");
+
+          projectdiv.classList.add("project-item");
+
+          projectdiv.innerHTML = `
+
+        <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        ">
+
+            <span>
+            ${project.name}
+            </span>
+
+            <div>
+
+                <img
+                src="./pencil.svg"
+                class="todo-btn project-edit">
+
+                <img
+                src="./delete.svg"
+                class="todo-btn project-delete">
+
+            </div>
+
+        </div>
+
+        `;
+
+          sidebar1.append(projectdiv);
+
+          // SWITCH PROJECT
+
+          projectdiv.addEventListener("click", () => {
+            activeProjectName = project.name;
+
+            showTodos();
+          });
+
+          // DELETE PROJECT
+
+          const deleteProjectBtn = projectdiv.querySelector(".project-delete");
+
+          deleteProjectBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            projects = projects.filter((p) => p.name !== project.name);
+
+            if (projects.length > 0) {
+              activeProjectName = projects[0].name;
+            }
+
+            showProjects();
+            showTodos();
+          });
+
+          // EDIT PROJECT
+
+          const editProjectBtn = projectdiv.querySelector(".project-edit");
+
+          editProjectBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            const newName = prompt("Edit Project Name", project.name);
+
+            if (newName) {
+              project.name = newName;
+
+              activeProjectName = newName;
+
+              showProjects();
+            }
+          });
+        });
+      }
+
+      // SHOW TODOS
+
+      function showTodos() {
+        todoContainer.innerHTML = "";
+
+        const currentProject = projects.find(
+          (project) => project.name === activeProjectName,
+        );
+
+        if (!currentProject) return;
+
+        currentProject.todos.forEach((todo) => {
+          const todoCard = document.createElement("div");
+
+          todoCard.classList.add("todo-card");
+
+          todoCard.innerHTML = `
+
+        <div>
+
+            <h3 class="todo-title">
+                ${todo.title}
+            </h3>
+
+            <p>
+                ${todo.description}
+            </p>
+
+            <small>
+                ${todo.dueDate}
+            </small>
+
+        </div>
+
+        <div class="todo-actions">
+
+            <img
+            src="./pencil.svg"
+            class="todo-btn edit-btn">
+
+            <img
+            src="./delete.svg"
+            class="todo-btn delete-btn">
+
+        </div>
+
+        `;
+
+          // SHOW DETAILS
+
+          const todoTitle = todoCard.querySelector(".todo-title");
+
+          todoTitle.addEventListener("click", () => {
+            detailsModal.style.display = "flex";
+
+            blurry.style.display = "block";
+
+            detailsTitle.textContent = todo.title;
+
+            detailsDescription.textContent = todo.description;
+
+            detailsDate.textContent = "Date: " + todo.dueDate;
+
+            detailsPriority.textContent = "Priority: " + todo.priorities;
+          });
+
+          // DELETE TODO
+
+          const deleteBtn = todoCard.querySelector(".delete-btn");
+
+          deleteBtn.addEventListener("click", () => {
+            currentProject.todos = currentProject.todos.filter(
+              (t) => t !== todo,
+            );
+
+            showTodos();
+          });
+
+          // EDIT TODO
+
+          const editBtn = todoCard.querySelector(".edit-btn");
+
+          editBtn.addEventListener("click", () => {
+            editingTodo = todo;
+
+            form2.style.display = "flex";
+
+            blurry.style.display = "block";
+
+            titleInput.value = todo.title;
+
+            descriptionInput.value = todo.description;
+
+            dateInput.value = todo.dueDate;
+
+            priorityInput.value = todo.priorities;
+          });
+
+          todoContainer.append(todoCard);
+        });
+      }
+
+      // OPEN PROJECT MODAL
+
+      addProjBtn.addEventListener("click", () => {
+        form1.style.display = "flex";
+
+        blurry.style.display = "block";
+      });
+
+      // CLOSE PROJECT MODAL
+
+      cancel1.addEventListener("click", () => {
+        form1.style.display = "none";
+
+        blurry.style.display = "none";
+      });
+
+      // CREATE PROJECT
+
+      createProjectBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        const name = projectNameInput.value.trim();
+
+        if (name === "") {
+          alert("Enter project name");
+
+          return;
+        }
+
+        projects.push({
+          name: name,
+          todos: [],
+        });
+
+        activeProjectName = name;
+
+        showProjects();
+
+        showTodos();
+
+        form1.reset();
+
+        form1.style.display = "none";
+
+        blurry.style.display = "none";
+      });
+
+      // OPEN TODO MODAL
+
+      newTodoBtn.addEventListener("click", () => {
+        editingTodo = null;
+
+        form2.reset();
+
+        form2.style.display = "flex";
+
+        blurry.style.display = "block";
+      });
+
+      // CLOSE TODO MODAL
+
+      cancel2.addEventListener("click", () => {
+        form2.style.display = "none";
+
+        blurry.style.display = "none";
+      });
+
+      // ADD OR EDIT TODO
+
+      addTodoBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        const title = titleInput.value.trim();
+
+        const description = descriptionInput.value;
+
+        const date = dateInput.value;
+
+        const priority = priorityInput.value;
+
+        if (title === "") {
+          alert("Enter todo title");
+
+          return;
+        }
+
+        const currentProject = projects.find(
+          (project) => project.name === activeProjectName,
+        );
+
+        if (editingTodo) {
+          editingTodo.title = title;
+
+          editingTodo.description = description;
+
+          editingTodo.dueDate = date;
+
+          editingTodo.priorities = priority;
+        } else {
+          const todo = new Todos(title, description, date, priority);
+
+          currentProject.todos.push(todo);
+        }
+
+        showTodos();
+
+        form2.reset();
+
+        form2.style.display = "none";
+
+        blurry.style.display = "none";
+      });
+
+      // CLOSE ALL MODALS
+
+      blurry.addEventListener("click", () => {
+        blurry.style.display = "none";
+
+        form1.style.display = "none";
+
+        form2.style.display = "none";
+
+        detailsModal.style.display = "none";
+      });
+
+      // INITIAL RENDER
+
+      showProjects();
+
+      showTodos();
+    </script>
+  </body>
+</html>
